@@ -1,0 +1,213 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 50;
+	objects = {
+
+/* Begin PBXFileReference section */
+		6928A674257E5AB8008C4B7A /* LICENSE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = LICENSE.md; sourceTree = "<group>"; };
+		6928A675257E5AB8008C4B7A /* libpostproc */ = {isa = PBXFileReference; lastKnownFileType = folder; path = libpostproc; sourceTree = "<group>"; };
+		6928A676257E5AB8008C4B7A /* tools */ = {isa = PBXFileReference; lastKnownFileType = folder; path = tools; sourceTree = "<group>"; };
+		6928A677257E5AB8008C4B7A /* compat */ = {isa = PBXFileReference; lastKnownFileType = folder; path = compat; sourceTree = "<group>"; };
+		6928A678257E5AB8008C4B7A /* RELEASE_NOTES */ = {isa = PBXFileReference; lastKnownFileType = text; path = RELEASE_NOTES; sourceTree = "<group>"; };
+		6928A679257E5AB8008C4B7A /* .DS_Store */ = {isa = PBXFileReference; lastKnownFileType = file; path = .DS_Store; sourceTree = "<group>"; };
+		6928A67A257E5AB8008C4B7A /* libavfilter */ = {isa = PBXFileReference; lastKnownFileType = folder; path = libavfilter; sourceTree = "<group>"; };
+		6928A67B257E5AB8008C4B7A /* libavutil */ = {isa = PBXFileReference; lastKnownFileType = folder; path = libavutil; sourceTree = "<group>"; };
+		6928A67C257E5AB8008C4B7A /* config.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = "<group>"; };
+		6928A67D257E5AB8008C4B7A /* configure */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = configure; sourceTree = "<group>"; };
+		6928A67E257E5AB8008C4B7A /* Changelog */ = {isa = PBXFileReference; lastKnownFileType = text; path = Changelog; sourceTree = "<group>"; };
+		6928A67F257E5AB8008C4B7A /* libavdevice */ = {isa = PBXFileReference; lastKnownFileType = folder; path = libavdevice; sourceTree = "<group>"; };
+		6928A680257E5AB8008C4B7A /* fftools */ = {isa = PBXFileReference; lastKnownFileType = folder; path = fftools; sourceTree = "<group>"; };
+		6928A681257E5AB8008C4B7A /* Makefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		6928A682257E5AB8008C4B7A /* libavformat */ = {isa = PBXFileReference; lastKnownFileType = folder; path = libavformat; sourceTree = "<group>"; };
+		6928A683257E5AB8008C4B7A /* libswscale */ = {isa = PBXFileReference; lastKnownFileType = folder; path = libswscale; sourceTree = "<group>"; };
+		6928A684257E5AB8008C4B7A /* tests */ = {isa = PBXFileReference; lastKnownFileType = folder; path = tests; sourceTree = "<group>"; };
+		6928A685257E5AB8008C4B7A /* COPYING.LGPLv2.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = COPYING.LGPLv2.1; sourceTree = "<group>"; };
+		6928A686257E5AB8008C4B7A /* INSTALL.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = INSTALL.md; sourceTree = "<group>"; };
+		6928A687257E5AB8008C4B7A /* RELEASE */ = {isa = PBXFileReference; lastKnownFileType = text; path = RELEASE; sourceTree = "<group>"; };
+		6928A688257E5AB8008C4B7A /* MAINTAINERS */ = {isa = PBXFileReference; lastKnownFileType = text; path = MAINTAINERS; sourceTree = "<group>"; };
+		6928A689257E5AB8008C4B7A /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		6928A68A257E5AB8008C4B7A /* libavcodec */ = {isa = PBXFileReference; lastKnownFileType = folder; path = libavcodec; sourceTree = "<group>"; };
+		6928A68B257E5AB8008C4B7A /* ffbuild */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ffbuild; sourceTree = "<group>"; };
+		6928A68C257E5AB8008C4B7A /* libavresample */ = {isa = PBXFileReference; lastKnownFileType = folder; path = libavresample; sourceTree = "<group>"; };
+		6928A68D257E5AB8008C4B7A /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		6928A68E257E5AB8008C4B7A /* CONTRIBUTING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CONTRIBUTING.md; sourceTree = "<group>"; };
+		6928A68F257E5AB8008C4B7A /* ReadMark */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ReadMark; sourceTree = "<group>"; };
+		6928A690257E5AB8008C4B7A /* COPYING.GPLv2 */ = {isa = PBXFileReference; lastKnownFileType = text; path = COPYING.GPLv2; sourceTree = "<group>"; };
+		6928A691257E5AB8008C4B7A /* .gitattributes */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitattributes; sourceTree = "<group>"; };
+		6928A692257E5AB8008C4B7A /* .version */ = {isa = PBXFileReference; lastKnownFileType = text; path = .version; sourceTree = "<group>"; };
+		6928A693257E5AB8008C4B7A /* COPYING.GPLv3 */ = {isa = PBXFileReference; lastKnownFileType = text; path = COPYING.GPLv3; sourceTree = "<group>"; };
+		6928A694257E5AB8008C4B7A /* doc */ = {isa = PBXFileReference; lastKnownFileType = folder; path = doc; sourceTree = "<group>"; };
+		6928A695257E5AB8008C4B7A /* COPYING.LGPLv3 */ = {isa = PBXFileReference; lastKnownFileType = text; path = COPYING.LGPLv3; sourceTree = "<group>"; };
+		6928A696257E5AB8008C4B7A /* .git */ = {isa = PBXFileReference; lastKnownFileType = folder; path = .git; sourceTree = "<group>"; };
+		6928A697257E5AB8008C4B7A /* presets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = presets; sourceTree = "<group>"; };
+		6928A698257E5AB8008C4B7A /* libswresample */ = {isa = PBXFileReference; lastKnownFileType = folder; path = libswresample; sourceTree = "<group>"; };
+		6928A699257E5AB8008C4B7A /* .travis.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = .travis.yml; sourceTree = "<group>"; };
+		6928A69A257E5AB8008C4B7A /* CREDITS */ = {isa = PBXFileReference; lastKnownFileType = text; path = CREDITS; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		6928A66E257E5AB8008C4B7A = {
+			isa = PBXGroup;
+			children = (
+				6928A674257E5AB8008C4B7A /* LICENSE.md */,
+				6928A675257E5AB8008C4B7A /* libpostproc */,
+				6928A676257E5AB8008C4B7A /* tools */,
+				6928A677257E5AB8008C4B7A /* compat */,
+				6928A678257E5AB8008C4B7A /* RELEASE_NOTES */,
+				6928A679257E5AB8008C4B7A /* .DS_Store */,
+				6928A67A257E5AB8008C4B7A /* libavfilter */,
+				6928A67B257E5AB8008C4B7A /* libavutil */,
+				6928A67C257E5AB8008C4B7A /* config.h */,
+				6928A67D257E5AB8008C4B7A /* configure */,
+				6928A67E257E5AB8008C4B7A /* Changelog */,
+				6928A67F257E5AB8008C4B7A /* libavdevice */,
+				6928A680257E5AB8008C4B7A /* fftools */,
+				6928A681257E5AB8008C4B7A /* Makefile */,
+				6928A682257E5AB8008C4B7A /* libavformat */,
+				6928A683257E5AB8008C4B7A /* libswscale */,
+				6928A684257E5AB8008C4B7A /* tests */,
+				6928A685257E5AB8008C4B7A /* COPYING.LGPLv2.1 */,
+				6928A686257E5AB8008C4B7A /* INSTALL.md */,
+				6928A687257E5AB8008C4B7A /* RELEASE */,
+				6928A688257E5AB8008C4B7A /* MAINTAINERS */,
+				6928A689257E5AB8008C4B7A /* README.md */,
+				6928A68A257E5AB8008C4B7A /* libavcodec */,
+				6928A68B257E5AB8008C4B7A /* ffbuild */,
+				6928A68C257E5AB8008C4B7A /* libavresample */,
+				6928A68D257E5AB8008C4B7A /* .gitignore */,
+				6928A68E257E5AB8008C4B7A /* CONTRIBUTING.md */,
+				6928A68F257E5AB8008C4B7A /* ReadMark */,
+				6928A690257E5AB8008C4B7A /* COPYING.GPLv2 */,
+				6928A691257E5AB8008C4B7A /* .gitattributes */,
+				6928A692257E5AB8008C4B7A /* .version */,
+				6928A693257E5AB8008C4B7A /* COPYING.GPLv3 */,
+				6928A694257E5AB8008C4B7A /* doc */,
+				6928A695257E5AB8008C4B7A /* COPYING.LGPLv3 */,
+				6928A696257E5AB8008C4B7A /* .git */,
+				6928A697257E5AB8008C4B7A /* presets */,
+				6928A698257E5AB8008C4B7A /* libswresample */,
+				6928A699257E5AB8008C4B7A /* .travis.yml */,
+				6928A69A257E5AB8008C4B7A /* CREDITS */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXLegacyTarget section */
+		6928A673257E5AB8008C4B7A /* ffmpeg-arm64 */ = {
+			isa = PBXLegacyTarget;
+			buildArgumentsString = "$(ACTION)";
+			buildConfigurationList = 6928A69B257E5AB8008C4B7A /* Build configuration list for PBXLegacyTarget "ffmpeg-arm64" */;
+			buildPhases = (
+			);
+			buildToolPath = /usr/bin/make;
+			buildWorkingDirectory = "/Users/menthu/Desktop/ijkplayer/ios/ffmpeg-arm64";
+			dependencies = (
+			);
+			name = "ffmpeg-arm64";
+			passBuildSettingsInEnvironment = 1;
+			productName = "ffmpeg-arm64";
+		};
+/* End PBXLegacyTarget section */
+
+/* Begin PBXProject section */
+		6928A66F257E5AB8008C4B7A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+			};
+			buildConfigurationList = 6928A672257E5AB8008C4B7A /* Build configuration list for PBXProject "ffmpeg-arm64" */;
+			compatibilityVersion = "Xcode 9.3";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 6928A66E257E5AB8008C4B7A;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				6928A673257E5AB8008C4B7A /* ffmpeg-arm64 */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin XCBuildConfiguration section */
+		6928A670257E5AB8008C4B7A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				COPY_PHASE_STRIP = NO;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx10.6;
+			};
+			name = Debug;
+		};
+		6928A671257E5AB8008C4B7A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				COPY_PHASE_STRIP = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				SDKROOT = macosx10.6;
+			};
+			name = Release;
+		};
+		6928A69C257E5AB8008C4B7A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				DEBUGGING_SYMBOLS = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "ffmpeg-arm64";
+			};
+			name = Debug;
+		};
+		6928A69D257E5AB8008C4B7A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "ffmpeg-arm64";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		6928A672257E5AB8008C4B7A /* Build configuration list for PBXProject "ffmpeg-arm64" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6928A670257E5AB8008C4B7A /* Debug */,
+				6928A671257E5AB8008C4B7A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		6928A69B257E5AB8008C4B7A /* Build configuration list for PBXLegacyTarget "ffmpeg-arm64" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6928A69C257E5AB8008C4B7A /* Debug */,
+				6928A69D257E5AB8008C4B7A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 6928A66F257E5AB8008C4B7A /* Project object */;
+}
