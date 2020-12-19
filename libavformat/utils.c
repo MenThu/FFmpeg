@@ -396,8 +396,17 @@ static int init_input(AVFormatContext *s, const char *filename,
 {
     int ret;
     AVProbeData pd = { filename, NULL, 0 };
+    /*
+     attention menthuguan
+     AVPROBE_SCORE_MAX=100
+     AVPROBE_SCORE_RETRY = AVPROBE_SCORE_MAX/4
+     */
     int score = AVPROBE_SCORE_RETRY;
 
+    /*
+     attention menthuguan
+     pb一般为NULL
+     */
     if (s->pb) {
         s->flags |= AVFMT_FLAG_CUSTOM_IO;
         if (!s->iformat)
@@ -409,6 +418,10 @@ static int init_input(AVFormatContext *s, const char *filename,
         return 0;
     }
 
+    /*
+     attention menthuguan
+     iformat一般为NULL且av_probe_input_format2返回也为NULL
+     */
     if ((s->iformat && s->iformat->flags & AVFMT_NOFILE) ||
         (!s->iformat && (s->iformat = av_probe_input_format2(&pd, 0, &score))))
         return score;
@@ -535,6 +548,10 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
         goto fail;
 
     av_strlcpy(s->filename, filename ? filename : "", sizeof(s->filename));
+    /*
+     attention menthuguan
+     如果传进来的是资源链接，比如是Mp4，则init_input方法结束后，资源会被下载到本地
+     */
     if ((ret = init_input(s, filename, &tmp)) < 0)
         goto fail;
     s->probe_score = ret;

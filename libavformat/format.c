@@ -58,6 +58,10 @@ AVOutputFormat *av_oformat_next(const AVOutputFormat *f)
         return first_oformat;
 }
 
+/*
+ attention menthuguan
+ 在ijkplayer启动的时候，通过av_register_all(allformats.c)和ijkav_register_all(allformats.c)注册
+ */
 void av_register_input_format(AVInputFormat *format)
 {
     AVInputFormat **p = last_iformat;
@@ -201,6 +205,12 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
     }
 
     fmt = NULL;
+    /*
+     attention menthuguan
+     这里应该只循环了一次
+     first_iformat应该只指向了ijkff_ijklivehook_demuxer
+     */
+    av_log(NULL, AV_LOG_WARNING, "MenThu Debug");
     while ((fmt1 = av_iformat_next(fmt1))) {
         if (!is_opened == !(fmt1->flags & AVFMT_NOFILE) && strcmp(fmt1->name, "image2"))
             continue;
