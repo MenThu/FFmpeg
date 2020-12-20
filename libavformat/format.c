@@ -210,7 +210,7 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
      这里应该只循环了一次
      first_iformat应该只指向了ijkff_ijklivehook_demuxer
      */
-    av_log(NULL, AV_LOG_WARNING, "MenThu Debug");
+    av_log(NULL, AV_LOG_WARNING, "menthuguan debug av_probe_input_format3");
     while ((fmt1 = av_iformat_next(fmt1))) {
         if (!is_opened == !(fmt1->flags & AVFMT_NOFILE) && strcmp(fmt1->name, "image2"))
             continue;

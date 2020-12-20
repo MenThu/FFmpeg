@@ -641,6 +641,10 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
             if((s->direct || size > s->buffer_size) && !s->update_checksum) {
                 // bypass the buffer and read data directly into buf
                 if(s->read_packet)
+                /*
+                 attention menthuguan
+                 read_packet->io_read_packet(aviobuf.c)
+                 */
                     len = s->read_packet(s->opaque, buf, size);
 
                 if (len <= 0) {
@@ -1082,6 +1086,10 @@ int ffio_open_whitelist(AVIOContext **s, const char *filename, int flags,
     URLContext *h;
     int err;
 
+    /*
+     attention menthuguan
+     avio.c
+     */
     err = ffurl_open_whitelist(&h, filename, flags, int_cb, options, whitelist, blacklist, NULL);
     if (err < 0)
         return err;

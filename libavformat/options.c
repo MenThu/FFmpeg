@@ -121,6 +121,13 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
+    /*
+     attention menthuguan
+     aviobuf.c
+     
+     打开指定连接
+     创建AVIOContext对象
+     */
     return ffio_open_whitelist(pb, url, flags, &s->interrupt_callback, options, s->protocol_whitelist, s->protocol_blacklist);
 }
 

@@ -42,6 +42,11 @@
 
 #include <float.h>
 
+/*
+ attention menthuguan
+ 这里的obj一般为AVClass二级指针
+ 这个方法就是遍历AVClass中的AVOption
+ */
 const AVOption *av_opt_next(const void *obj, const AVOption *last)
 {
     const AVClass *class;
@@ -1293,6 +1298,15 @@ void av_opt_set_defaults(void *s)
     av_opt_set_defaults2(s, 0, 0);
 }
 
+/*
+ attention menthuguan
+ 以解析ff_http_protocol为例
+ s实际是URLContxt的头部指针，又因为URLContex结构体的第一个变量为AVClass，所以这里又可以将s当作AVClass来处理
+ AVOption中的offset是HTTPContext成员相对于起始地址的偏移量(dst存储的就是某一个成员的起始地址)
+ 
+ 
+ 通用解释：将http.c、tcp.c的options中配置的值复制到HTTPContext、TCPContext中
+ */
 void av_opt_set_defaults2(void *s, int mask, int flags)
 {
     const AVOption *opt = NULL;

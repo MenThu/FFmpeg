@@ -1072,6 +1072,10 @@ static void id3v2_read_internal(AVIOContext *pb, AVDictionary **metadata,
     if (max_search_size && max_search_size < ID3v2_HEADER_SIZE)
         return;
 
+    /*
+     attention menthuguan
+     avio_tell = avio_seek(s, 0, SEEK_CUR);(aviobuf.c)
+     */
     start = avio_tell(pb);
     do {
         /* save the current offset in case there's nothing to read/skip */
@@ -1083,7 +1087,11 @@ static void id3v2_read_internal(AVIOContext *pb, AVDictionary **metadata,
 
         ret = ffio_ensure_seekback(pb, ID3v2_HEADER_SIZE);
         if (ret >= 0)
-            ret = avio_read(pb, buf, ID3v2_HEADER_SIZE);
+        /*
+         attention menthuguan
+         avio_read(aviobuf.c)
+         */
+        ret = avio_read(pb, buf, ID3v2_HEADER_SIZE);
         if (ret != ID3v2_HEADER_SIZE) {
             avio_seek(pb, off, SEEK_SET);
             break;

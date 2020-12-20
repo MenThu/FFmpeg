@@ -114,6 +114,12 @@ const char *avio_enum_protocols(void **opaque, int output)
     return avio_enum_protocols(opaque, output);
 }
 
+/*
+ attention menthuguan
+ 将url_protocols中所有URLProtocol结构都返回给上层
+ 这里的URLProtocol应该是对着网络处理类
+ 例如http://xxx.xxx.mp4对应着ff_http_protocol
+ */
 const URLProtocol **ffurl_get_protocols(const char *whitelist,
                                         const char *blacklist)
 {

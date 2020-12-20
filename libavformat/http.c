@@ -224,7 +224,7 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
     else
         path = path1;
     local_path = path;
-    if (use_proxy) {
+    if (use_proxy) {//这里的use_proxy为NO
         /* Reassemble the request URL without auth string - we don't
          * want to leak the auth to the proxy. */
         ff_url_join(urlbuf, sizeof(urlbuf), proto, NULL, hostname, port, "%s",
@@ -238,6 +238,11 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
 
     if (!s->hd) {
         av_dict_set_int(options, "ijkapplication", (int64_t)(intptr_t)s->app_ctx, 0);
+        /*
+         attention menthuguan
+         这里会打开tcp层的协议，并且调用tcp.c中的一系列方法
+         
+         */
         err = ffurl_open_whitelist(&s->hd, buf, AVIO_FLAG_READ_WRITE,
                                    &h->interrupt_callback, options,
                                    h->protocol_whitelist, h->protocol_blacklist, h);
@@ -246,6 +251,11 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
     }
 
     av_strlcpy(prev_location, s->location, sizeof(prev_location));
+    
+    /*
+     attention menthuguan
+     URLContext.priv_data->HTTPContext->HTTPContext.hd(URLContext)->URLContext.priv_data->TCPContext
+     */
     err = http_connect(h, path, local_path, hoststr,
                        auth, proxyauth, &location_changed);
     if (err < 0)
@@ -1148,6 +1158,10 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
                                                 local_path, method);
     proxyauthstr = ff_http_auth_create_response(&s->proxy_auth_state, proxyauth,
                                                 local_path, method);
+    /*
+     attention menthuguan
+     观察下authstr和proxyauthstr的内容
+     */
     if (post && !s->post_data) {
         send_expect_100 = s->send_expect_100;
         /* The user has supplied authentication but we don't know the auth type,

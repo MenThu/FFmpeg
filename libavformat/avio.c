@@ -70,6 +70,10 @@ const AVClass ffurl_context_class = {
 };
 /*@}*/
 
+/*
+ attention menthuguan
+ 将URLProtocol *up封装进URLContext **puc中，并且根据相应的options配置相应的Context(HTTPContext、TCPContext)
+ */
 static int url_alloc_for_protocol(URLContext **puc, const URLProtocol *up,
                                   const char *filename, int flags,
                                   const AVIOInterruptCB *int_cb)
@@ -163,6 +167,10 @@ fail:
     return err;
 }
 
+/*
+ attention menthuguan
+ 根据URLContext中URLProtocl的url_open或者url_open2方法访问视频资源
+ */
 int ffurl_connect(URLContext *uc, AVDictionary **options)
 {
     int err;
@@ -178,6 +186,11 @@ int ffurl_connect(URLContext *uc, AVDictionary **options)
     av_assert0(!(e=av_dict_get(*options, "protocol_blacklist", NULL, 0)) ||
                (uc->protocol_blacklist && !strcmp(uc->protocol_blacklist, e->value)));
 
+    /*
+     attention menthuguan
+     在播放在线mp4的时候，uc的protocol_whitelist和protocol_blacklist原本为NULL
+     然后从uc->prot->default_whitelist拷贝到uc的protocol_whitelist
+     */
     if (uc->protocol_whitelist && av_match_list(uc->prot->name, uc->protocol_whitelist, ',') <= 0) {
         av_log(uc, AV_LOG_ERROR, "Protocol '%s' not on whitelist '%s'!\n", uc->prot->name, uc->protocol_whitelist);
         return AVERROR(EINVAL);
@@ -248,6 +261,10 @@ int ffurl_handshake(URLContext *c)
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"                \
     "0123456789+-."
 
+/*
+ attention menthuguan
+ 找到文件名对应的处理结构体
+ */
 static const struct URLProtocol *url_find_protocol(const char *filename)
 {
     const URLProtocol **protocols;
@@ -287,6 +304,10 @@ static const struct URLProtocol *url_find_protocol(const char *filename)
     return NULL;
 }
 
+/*
+ attention menthuguan
+ 跟进传入filename选择相应的URLProtocol，然后封装URLContext
+ */
 int ffurl_alloc(URLContext **puc, const char *filename, int flags,
                 const AVIOInterruptCB *int_cb)
 {
@@ -304,6 +325,10 @@ int ffurl_alloc(URLContext **puc, const char *filename, int flags,
     return AVERROR_PROTOCOL_NOT_FOUND;
 }
 
+/*
+ attention menthuguan
+ 根据filename前面的协议名称找到对应的协议对象，并打开它
+ */
 int ffurl_open_whitelist(URLContext **puc, const char *filename, int flags,
                          const AVIOInterruptCB *int_cb, AVDictionary **options,
                          const char *whitelist, const char* blacklist,
@@ -311,6 +336,10 @@ int ffurl_open_whitelist(URLContext **puc, const char *filename, int flags,
 {
     AVDictionary *tmp_opts = NULL;
     AVDictionaryEntry *e;
+    /*
+     attention menthuguan
+     关注下int_cb是否为空
+     */
     int ret = ffurl_alloc(puc, filename, flags, int_cb);
     if (ret < 0)
         return ret;

@@ -426,11 +426,21 @@ static int init_input(AVFormatContext *s, const char *filename,
         (!s->iformat && (s->iformat = av_probe_input_format2(&pd, 0, &score))))
         return score;
 
+    /*
+     attention menthuguan
+     获取s->pb(AVIOContext) AVFormatContext在options.c创建的
+     */
     if ((ret = s->io_open(s, &s->pb, filename, AVIO_FLAG_READ | s->avio_flags, options)) < 0)
         return ret;
 
     if (s->iformat)
         return 0;
+    
+    /*
+     attention menthuguan
+     av_probe_input_buffer2(format.c)
+     这里对AVFormatContext的iformat赋值
+     */
     return av_probe_input_buffer2(s->pb, &s->iformat, filename,
                                  s, 0, s->format_probesize);
 }
@@ -523,6 +533,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 int avformat_open_input(AVFormatContext **ps, const char *filename,
                         AVInputFormat *fmt, AVDictionary **options)
 {
+    av_log(NULL, AV_LOG_WARNING, "menthuguan debug avformat_open_input 0930\n");
     AVFormatContext *s = *ps;
     int i, ret = 0;
     AVDictionary *tmp = NULL;
@@ -548,10 +559,6 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
         goto fail;
 
     av_strlcpy(s->filename, filename ? filename : "", sizeof(s->filename));
-    /*
-     attention menthuguan
-     如果传进来的是资源链接，比如是Mp4，则init_input方法结束后，资源会被下载到本地
-     */
     if ((ret = init_input(s, filename, &tmp)) < 0)
         goto fail;
     s->probe_score = ret;
@@ -616,8 +623,13 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
 
             if ((ret = s->iformat->read_header2(s, &tmp2)) < 0)
                 goto fail;
-        } else if (s->iformat->read_header && (ret = s->iformat->read_header(s)) < 0)
+        } else if (s->iformat->read_header && (ret = s->iformat->read_header(s)) < 0){
+            /*
+             attention menthuguan
+             这里会去读mp4连接，并以mov为单位来解析
+             */
             goto fail;
+        }
     }
 
     if (!s->metadata) {
