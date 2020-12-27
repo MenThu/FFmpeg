@@ -1060,6 +1060,11 @@ error:
     return;
 }
 
+/*
+ attention menthuguan
+ 获取mp3文件头？如果待处理的资源是mp4，那么这里的逻辑应该就没有用？
+ 关于id3v2的资料：https://blog.csdn.net/ciellee/article/details/108822693
+ */
 static void id3v2_read_internal(AVIOContext *pb, AVDictionary **metadata,
                                 AVFormatContext *s, const char *magic,
                                 ID3v2ExtraMeta **extra_meta, int64_t max_search_size)

@@ -138,6 +138,10 @@ AVIOContext *avio_alloc_context(
     AVIOContext *s = av_mallocz(sizeof(AVIOContext));
     if (!s)
         return NULL;
+    /*
+     attention menthuguan
+     ffio_init_context(aviobuf.c)
+     */
     ffio_init_context(s, buffer, buffer_size, write_flag, opaque,
                   read_packet, write_packet, seek);
     return s;
@@ -243,6 +247,11 @@ void avio_flush(AVIOContext *s)
 
 int64_t avio_seek(AVIOContext *s, int64_t offset, int whence)
 {
+    /*
+     attention menthuguan
+     SEEK_CUR = 1 (系统库 stdio.h )
+     */
+    //offset = -8; whence=SEEK_CUR
     int64_t offset1;
     int64_t pos;
     int force = whence & AVSEEK_FORCE;
@@ -250,12 +259,15 @@ int64_t avio_seek(AVIOContext *s, int64_t offset, int whence)
     int short_seek;
     whence &= ~AVSEEK_FORCE;
 
-    if(!s)
+    if(!s){
         return AVERROR(EINVAL);
+    }
 
     buffer_size = s->buf_end - s->buffer;
     // pos is the absolute position that the beginning of s->buffer corresponds to in the file
     pos = s->pos - (s->write_flag ? 0 : buffer_size);
+    
+    //av_log(s, AV_LOG_WARNING, "menthuguan whence=[%d] buffer_size=[%d] pos=[%d]\n", whence, buffer_size, pos);
 
     if (whence != SEEK_CUR && whence != SEEK_SET)
         return AVERROR(EINVAL);
@@ -538,17 +550,19 @@ static void fill_buffer(AVIOContext *s)
     int len             = s->buffer_size - (dst - s->buffer);
 
     /* can't fill the buffer without read_packet, just set EOF if appropriate */
-    if (!s->read_packet && s->buf_ptr >= s->buf_end)
+    if (!s->read_packet && s->buf_ptr >= s->buf_end){
         s->eof_reached = 1;
+    }
 
     /* no need to do anything if EOF already reached */
-    if (s->eof_reached)
+    if (s->eof_reached){
         return;
+    }
 
     if (s->update_checksum && dst == s->buffer) {
-        if (s->buf_end > s->checksum_ptr)
-            s->checksum = s->update_checksum(s->checksum, s->checksum_ptr,
-                                             s->buf_end - s->checksum_ptr);
+        if (s->buf_end > s->checksum_ptr){
+            s->checksum = s->update_checksum(s->checksum, s->checksum_ptr, s->buf_end - s->checksum_ptr);
+        }
         s->checksum_ptr = s->buffer;
     }
 
@@ -637,15 +651,17 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
     size1 = size;
     while (size > 0) {
         len = FFMIN(s->buf_end - s->buf_ptr, size);
+        //av_log(s, AV_LOG_WARNING, "menthuguan debug size=[%d] len=[%d] s->buffer_size=[%d]\n", size, len, s->buffer_size);
         if (len == 0 || s->write_flag) {
             if((s->direct || size > s->buffer_size) && !s->update_checksum) {
                 // bypass the buffer and read data directly into buf
-                if(s->read_packet)
-                /*
-                 attention menthuguan
-                 read_packet->io_read_packet(aviobuf.c)
-                 */
+                if(s->read_packet){
+                    /*
+                     attention menthuguan
+                     read_packet->io_read_packet(aviobuf.c)
+                     */
                     len = s->read_packet(s->opaque, buf, size);
+                }
 
                 if (len <= 0) {
                     /* do not modify buffer if EOF reached so that a seek back can
@@ -664,6 +680,10 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
                     s->buf_end = s->buffer/* + len*/;
                 }
             } else {
+                /*
+                 attention menthuguan
+                 fill_buffer(aviobuf.c)
+                 */
                 fill_buffer(s);
                 len = s->buf_end - s->buf_ptr;
                 if (len == 0)
@@ -913,6 +933,11 @@ static int64_t io_read_seek(void *opaque, int stream_index, int64_t timestamp, i
     return internal->h->prot->url_read_seek(internal->h, stream_index, timestamp, flags);
 }
 
+/*
+ attention menthuguan
+ 创建AVIOContext对象
+ 赋值读写函数
+ */
 int ffio_fdopen(AVIOContext **s, URLContext *h)
 {
     AVIOInternal *internal = NULL;
@@ -935,6 +960,10 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
 
     internal->h = h;
 
+    /*
+     attention menthuguan
+     avio_alloc_context(aviobuf.c)
+     */
     *s = avio_alloc_context(buffer, buffer_size, h->flags & AVIO_FLAG_WRITE,
                             internal, io_read_packet, io_write_packet, io_seek);
     if (!*s)
@@ -1088,11 +1117,17 @@ int ffio_open_whitelist(AVIOContext **s, const char *filename, int flags,
 
     /*
      attention menthuguan
-     avio.c
+     ffurl_open_whitelist(avio.c)
+     
      */
     err = ffurl_open_whitelist(&h, filename, flags, int_cb, options, whitelist, blacklist, NULL);
     if (err < 0)
         return err;
+    
+    /*
+     attention menthuguan
+     ffio_fdopen(aviobuf.c)
+     */
     err = ffio_fdopen(s, h);
     if (err < 0) {
         ffurl_close(h);

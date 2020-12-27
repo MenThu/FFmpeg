@@ -391,6 +391,14 @@ int av_demuxer_open(AVFormatContext *ic) {
 }
 
 /* Open input file and probe the format if necessary. */
+/*
+ attention menthuguan
+ 在播放mp4情况下
+ 该方法会:
+ 创建tcp通道用来传输数据
+ 打开http用来组装应用层协议数据
+ 根据返回的数据选择相应的解封装类mov
+ */
 static int init_input(AVFormatContext *s, const char *filename,
                       AVDictionary **options)
 {
@@ -533,7 +541,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 int avformat_open_input(AVFormatContext **ps, const char *filename,
                         AVInputFormat *fmt, AVDictionary **options)
 {
-    av_log(NULL, AV_LOG_WARNING, "menthuguan debug avformat_open_input 0930\n");
+    //av_log(NULL, AV_LOG_WARNING, "menthuguan debug avformat_open_input 0930\n");
     AVFormatContext *s = *ps;
     int i, ret = 0;
     AVDictionary *tmp = NULL;
@@ -585,6 +593,10 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
         goto fail;
     }
 
+    /*
+     attention menthuguan
+     avio_skip(aviobuf.c)
+     */
     avio_skip(s->pb, s->skip_initial_bytes);
 
     /* Check filename in case an image number is expected. */
@@ -605,6 +617,10 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
         }
         if (s->iformat->priv_class) {
             *(const AVClass **) s->priv_data = s->iformat->priv_class;
+            /*
+             attention menthuguan
+             av_opt_set_defaults(opt.c)
+             */
             av_opt_set_defaults(s->priv_data);
             if ((ret = av_opt_set_dict(s->priv_data, &tmp)) < 0)
                 goto fail;
@@ -612,8 +628,13 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
     }
 
     /* e.g. AVFMT_NOFILE formats will not have a AVIOContext */
-    if (s->pb)
+    if (s->pb){
+        /*
+         attention menthuguan
+         ff_id3v2_read_dict(id3v2.c)
+         */
         ff_id3v2_read_dict(s->pb, &s->internal->id3v2_meta, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta);
+    }
 
 
     if (!(s->flags&AVFMT_FLAG_PRIV_OPT)) {
@@ -626,7 +647,7 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
         } else if (s->iformat->read_header && (ret = s->iformat->read_header(s)) < 0){
             /*
              attention menthuguan
-             这里会去读mp4连接，并以mov为单位来解析
+             在mp4场景下，iformat是ff_mov_demuxer
              */
             goto fail;
         }

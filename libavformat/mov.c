@@ -3739,6 +3739,10 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     MOVStreamContext *sc;
     int ret;
 
+    /*
+     attention menthuguan
+     avformat_new_stream(utils.c)
+     */
     st = avformat_new_stream(c->fc, NULL);
     if (!st) return AVERROR(ENOMEM);
     st->id = c->fc->nb_streams;
@@ -5580,12 +5584,17 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
     c->atom_depth ++;
 
-    if (atom.size < 0)
+    if (atom.size < 0){
         atom.size = INT64_MAX;
+    }
+    av_log(NULL, AV_LOG_TRACE, "menthuguan in mov_read_default found=[%d] atom:type=[%s],size=[%d]\n",
+           c->found_moov, av_fourcc2str(atom.type), atom.size);
+    uint8_t count = 0;
     while (total_size <= atom.size - 8 && !avio_feof(pb)) {
         int (*parse)(MOVContext*, AVIOContext*, MOVAtom) = NULL;
         a.size = atom.size;
         a.type=0;
+        av_log(NULL, AV_LOG_TRACE, "menthuguan count=[%d] total_size=[%lld]\n", ++count, total_size);
         if (atom.size >= 8) {
             a.size = avio_rb32(pb);
             a.type = avio_rl32(pb);
@@ -5621,7 +5630,7 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 total_size += 8;
             }
         }
-        av_log(c->fc, AV_LOG_TRACE, "type:'%s' parent:'%s' sz: %"PRId64" %"PRId64" %"PRId64"\n",
+        av_log(c->fc, AV_LOG_TRACE, "menthuguan type:'%s' parent:'%s' sz: %"PRId64" %"PRId64" %"PRId64"\n",
                av_fourcc2str(a.type), av_fourcc2str(atom.type), a.size, total_size, atom.size);
         if (a.size == 0) {
             a.size = atom.size - total_size + 8;
@@ -5638,9 +5647,10 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             }
 
         // container is user data
-        if (!parse && (atom.type == MKTAG('u','d','t','a') ||
-                       atom.type == MKTAG('i','l','s','t')))
+        if (!parse &&
+            (atom.type == MKTAG('u','d','t','a') || atom.type == MKTAG('i','l','s','t'))){
             parse = mov_read_udta_string;
+        }
 
         // Supports parsing the QuickTime Metadata Keys.
         // https://developer.apple.com/library/mac/documentation/QuickTime/QTFF/Metadata/Metadata.html
@@ -5666,6 +5676,7 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 if (!(pb->seekable & AVIO_SEEKABLE_NORMAL) || c->fc->flags & AVFMT_FLAG_IGNIDX || c->fragment_index_complete)
                     c->next_root_atom = start_pos + a.size;
                 c->atom_depth --;
+                av_log(NULL, AV_LOG_TRACE, "menthuguan mov_read_default return 0\n");
                 return 0;
             }
             left = a.size - avio_tell(pb) + start_pos;
@@ -5681,6 +5692,8 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
         total_size += a.size;
     }
+    
+    av_log(NULL, AV_LOG_TRACE, "menthuguan quit while\n");
 
     if (total_size < atom.size && atom.size < 0x7ffff)
         avio_skip(pb, atom.size - total_size);
@@ -5702,6 +5715,12 @@ static int mov_probe(AVProbeData *p)
         /* ignore invalid offset */
         if ((offset + 8) > (unsigned int)p->buf_size)
             break;
+        /*
+         attention menthuguan
+         可能是因为效率考虑，AV_RL32最终会调用一个用汇编实现的方法,intreadwrite.h
+         box起始是4个字节的size，接着是4个字节的type
+         https://blog.csdn.net/qq_25333681/article/details/93144167
+         */
         tag = AV_RL32(p->buf + offset + 4);
         switch(tag) {
         /* check for obvious tags */
@@ -6170,6 +6189,10 @@ fail:
 
 static int mov_read_header(AVFormatContext *s)
 {
+    /*
+     attention menthuguan
+     MOVAtom，MOVContext(isom.h)
+     */
     MOVContext *mov = s->priv_data;
     AVIOContext *pb = s->pb;
     int j, err;
@@ -6185,20 +6208,28 @@ static int mov_read_header(AVFormatContext *s)
     mov->fc = s;
     mov->trak_index = -1;
     /* .mov and .mp4 aren't streamable anyway (only progressive download if moov is before mdat) */
-    if (pb->seekable & AVIO_SEEKABLE_NORMAL)
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL){
+        /*
+         attention menthuguan
+         通过http.c中文件Get响应的content-length字段获取
+         */
         atom.size = avio_size(pb);
-    else
+        av_log(NULL, AV_LOG_TRACE, "menthuguan atom.size=[%d]\n", atom.size);
+    }else{
         atom.size = INT64_MAX;
+    }
 
     /* check MOV header */
     do {
-    if (mov->moov_retry)
-        avio_seek(pb, 0, SEEK_SET);
-    if ((err = mov_read_default(mov, pb, atom)) < 0) {
-        av_log(s, AV_LOG_ERROR, "error reading header\n");
-        mov_read_close(s);
-        return err;
-    }
+        av_log(NULL, AV_LOG_TRACE, "menthuguan before moov_retry=[%d] atom_depth=[%d]\n", mov->moov_retry, mov->atom_depth);
+        if (mov->moov_retry){
+            avio_seek(pb, 0, SEEK_SET);
+        }
+        if ((err = mov_read_default(mov, pb, atom)) < 0) {
+            av_log(s, AV_LOG_ERROR, "error reading header\n");
+            mov_read_close(s);
+            return err;
+        }
     } while ((pb->seekable & AVIO_SEEKABLE_NORMAL) && !mov->found_moov && !mov->moov_retry++);
     if (!mov->found_moov) {
         av_log(s, AV_LOG_ERROR, "moov atom not found\n");
@@ -6208,8 +6239,9 @@ static int mov_read_header(AVFormatContext *s)
     av_log(mov->fc, AV_LOG_TRACE, "on_parse_exit_offset=%"PRId64"\n", avio_tell(pb));
 
     if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
-        if (mov->nb_chapter_tracks > 0 && !mov->ignore_chapters)
+        if (mov->nb_chapter_tracks > 0 && !mov->ignore_chapters){
             mov_read_chapters(s);
+        }
         for (i = 0; i < s->nb_streams; i++)
             if (s->streams[i]->codecpar->codec_tag == AV_RL32("tmcd")) {
                 mov_read_timecode_track(s, s->streams[i]);

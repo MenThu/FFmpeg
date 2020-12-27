@@ -1104,7 +1104,7 @@ static int http_read_header(URLContext *h, int *new_location)
         if ((err = http_get_line(s, line, sizeof(line))) < 0)
             return err;
 
-        av_log(h, AV_LOG_TRACE, "header='%s'\n", line);
+        //av_log(h, AV_LOG_TRACE, "menthuguan header='%s'\n", line);
 
         err = process_line(h, line, s->line_count, new_location);
         if (err < 0)

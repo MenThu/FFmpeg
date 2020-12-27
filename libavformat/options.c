@@ -123,8 +123,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     /*
      attention menthuguan
-     aviobuf.c
-     
+     ffio_open_whitelist(aviobuf.c)
      打开指定连接
      创建AVIOContext对象
      */

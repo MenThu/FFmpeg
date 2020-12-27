@@ -191,7 +191,7 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
     if (!lpd.buf)
         lpd.buf = (unsigned char *) zerobuffer;
 
-    if (lpd.buf_size > 10 && ff_id3v2_match(lpd.buf, ID3v2_DEFAULT_MAGIC)) {
+    if (lpd.buf_size > 10 && ff_id3v2_match(lpd.buf, ID3v2_DEFAULT_MAGIC)) {//播放在线mp4时并没有执行if内代码
         int id3len = ff_id3v2_tag_len(lpd.buf);
         if (lpd.buf_size > id3len + 16) {
             if (lpd.buf_size < 2LL*id3len + 16)
@@ -207,10 +207,9 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
     fmt = NULL;
     /*
      attention menthuguan
-     这里应该只循环了一次
-     first_iformat应该只指向了ijkff_ijklivehook_demuxer
+     mov.c？
      */
-    av_log(NULL, AV_LOG_WARNING, "menthuguan debug av_probe_input_format3");
+    //av_log(NULL, AV_LOG_WARNING, "menthuguan debug av_probe_input_format3");
     while ((fmt1 = av_iformat_next(fmt1))) {
         if (!is_opened == !(fmt1->flags & AVFMT_NOFILE) && strcmp(fmt1->name, "image2"))
             continue;
@@ -252,7 +251,6 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
     if (nodat == ID3_GREATER_PROBE)
         score_max = FFMIN(AVPROBE_SCORE_EXTENSION / 2 - 1, score_max);
     *score_ret = score_max;
-
     return fmt;
 }
 
@@ -273,6 +271,10 @@ AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened)
     return av_probe_input_format2(pd, is_opened, &score);
 }
 
+/*
+ attention menthuguan
+ 读取文件头部信息，根据头部信息的接口来选取一个合适AVInputFormat对象来进行后续的处理
+ */
 int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
                           const char *filename, void *logctx,
                           unsigned int offset, unsigned int max_probe_size)
@@ -313,6 +315,13 @@ int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
     }
 #endif
 
+    /*
+     attention menthuguan
+     for循环的第三个条件有点意思
+     在不大于max_probe_size的前提下，probe_size每次循环扩大一倍
+     
+     for循环的目的：找到适合处理资源的inputformat，对于mp4来说，这里会选择mov.c
+     */
     for (probe_size = PROBE_BUF_MIN; probe_size <= max_probe_size && !*fmt;
          probe_size = FFMIN(probe_size << 1,
                             FFMAX(max_probe_size, probe_size + 1))) {
@@ -321,6 +330,10 @@ int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
         /* Read probe data. */
         if ((ret = av_reallocp(&buf, probe_size + AVPROBE_PADDING_SIZE)) < 0)
             goto fail;
+        /*
+         attention menthuguan
+         avio_read(aviobuf.c)
+         */
         if ((ret = avio_read(pb, buf + buf_offset,
                              probe_size - buf_offset)) < 0) {
             /* Fail if error was not end of file, otherwise, lower score. */
@@ -339,6 +352,11 @@ int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
         memset(pd.buf + pd.buf_size, 0, AVPROBE_PADDING_SIZE);
 
         /* Guess file format. */
+        /*
+         attention menthuguan
+        av_probe_input_format2(format.c)
+        播放在线mp4时，av_probe_input_format2返回为ff_mov_demuxer(mov.c)
+         */
         *fmt = av_probe_input_format2(&pd, 1, &score);
         if (*fmt) {
             /* This can only be true in the last iteration. */
