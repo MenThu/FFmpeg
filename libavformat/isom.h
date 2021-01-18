@@ -131,30 +131,76 @@ typedef struct MOVStreamContext {
     AVIOContext *pb;
     int pb_is_copied;
     int ffindex;          ///< AVStream index
+    
+    /*
+     attention menthuguan
+     chunk是存储这sample的单位
+     */
     int next_chunk;
     unsigned int chunk_count;
+    
+    /*
+     attention menthuguan
+     chunk到mdat的偏移量
+     */
     int64_t *chunk_offsets;
+    
+    /*
+     attention menthuguan
+     stts代表每个sample的时长信息
+     */
     unsigned int stts_count;
     MOVStts *stts_data;
+    
+    /*
+     attention menthuguan
+     ctts代表解码时间与显示时间的映射关系
+     */
     unsigned int ctts_count;
     unsigned int ctts_allocated_size;
     MOVStts *ctts_data;
     unsigned int stsc_count;
+    
+    /*
+     attention menthuguan
+     stsc代表每一个chunk中包含的sample数
+     */
     MOVStsc *stsc_data;
     unsigned int stsc_index;
     int stsc_sample;
+    
+    
     unsigned int stps_count;
     unsigned *stps_data;  ///< partial sync sample for mpeg-2 open gop
+    
     MOVElst *elst_data;
     unsigned int elst_count;
+    
+    
     int ctts_index;
     int ctts_sample;
+    
     unsigned int sample_size; ///< may contain value calculated from stsd or value from stsz atom
+    
+    /*
+     attention menthuguan
+     从stsz获取的数据
+     */
     unsigned int stsz_sample_size; ///< always contains sample size from stsz atom
     unsigned int sample_count;
+    
+    /*
+     attention menthuguan
+     保存着每一个sample的大小
+     */
     int *sample_sizes;
     int keyframe_absent;
     unsigned int keyframe_count;
+    
+    /*
+     attention menthuguan
+     从stss中获取的关键字位置信息
+     */
     int *keyframes;
     int time_scale;
     int64_t time_offset;  ///< time offset of the edit list entries
@@ -219,6 +265,7 @@ typedef struct MOVStreamContext {
 typedef struct MOVContext {
     const AVClass *class; ///< class for private options
     AVFormatContext *fc;
+    //从moov->mvhd->timescale中读取的值
     int time_scale;
     int64_t duration;     ///< duration of the longest track
     int found_moov;       ///< 'moov' atom has been found
@@ -265,6 +312,11 @@ typedef struct MOVContext {
     uint8_t *decryption_key;
     int decryption_key_len;
     int enable_drefs;
+    /*
+     attention menthuguan
+     movie_display_matrix从tkhd中来的
+     为什么sound trak中也有矩阵信息呢？
+     */
     int32_t movie_display_matrix[3][3]; ///< display matrix from mvhd
 } MOVContext;
 

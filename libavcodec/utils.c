@@ -178,6 +178,10 @@ int av_codec_is_decoder(const AVCodec *codec)
 
 av_cold void avcodec_register(AVCodec *codec)
 {
+    /*
+     attention menthuguan
+     av_register_all(libavcodec/allcodecs.c)会注册很多编码器、解码器
+     */
     AVCodec **p;
     avcodec_init();
     p = last_avcodec;
@@ -1238,6 +1242,10 @@ static enum AVCodecID remap_deprecated_codec_id(enum AVCodecID id)
 static AVCodec *find_encdec(enum AVCodecID id, int encoder)
 {
     AVCodec *p, *experimental = NULL;
+    /*
+     attention menthuguan
+     first_avcodec(libavcodec/utils.c)
+     */
     p = first_avcodec;
     id= remap_deprecated_codec_id(id);
     while (p) {
@@ -1274,6 +1282,10 @@ AVCodec *avcodec_find_encoder_by_name(const char *name)
 
 AVCodec *avcodec_find_decoder(enum AVCodecID id)
 {
+    /*
+     attention menthuguan
+     utils.c
+     */
     return find_encdec(id, 0);
 }
 

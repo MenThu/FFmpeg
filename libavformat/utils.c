@@ -484,7 +484,7 @@ static int add_to_pktbuf(AVPacketList **packet_buffer, AVPacket *pkt,
 int avformat_queue_attached_pictures(AVFormatContext *s)
 {
     int i, ret;
-    for (i = 0; i < s->nb_streams; i++)
+    for (i = 0; i < s->nb_streams; i++){
         if (s->streams[i]->disposition & AV_DISPOSITION_ATTACHED_PIC &&
             s->streams[i]->discard < AVDISCARD_ALL) {
             if (s->streams[i]->attached_pic.size <= 0) {
@@ -497,9 +497,11 @@ int avformat_queue_attached_pictures(AVFormatContext *s)
             ret = add_to_pktbuf(&s->internal->raw_packet_buffer,
                                 &s->streams[i]->attached_pic,
                                 &s->internal->raw_packet_buffer_end, 1);
-            if (ret < 0)
+            if (ret < 0){
                 return ret;
+            }
         }
+    }
     return 0;
 }
 
@@ -678,8 +680,9 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
     }
     ff_id3v2_free_extra_meta(&id3v2_extra_meta);
 
-    if ((ret = avformat_queue_attached_pictures(s)) < 0)
+    if ((ret = avformat_queue_attached_pictures(s)) < 0){
         goto fail;
+    }
 
     if (!(s->flags&AVFMT_FLAG_PRIV_OPT) && s->pb && !s->internal->data_offset)
         s->internal->data_offset = avio_tell(s->pb);
@@ -861,9 +864,12 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (pktl) {
             *pkt = pktl->pkt;
             st   = s->streams[pkt->stream_index];
-            if (s->internal->raw_packet_buffer_remaining_size <= 0)
-                if ((err = probe_codec(s, st, NULL)) < 0)
+            if (s->internal->raw_packet_buffer_remaining_size <= 0){
+                if ((err = probe_codec(s, st, NULL)) < 0){
                     return err;
+                }
+            }
+                
             if (st->request_probe <= 0) {
                 s->internal->raw_packet_buffer                 = pktl->next;
                 s->internal->raw_packet_buffer_remaining_size += pkt->size;
@@ -1634,13 +1640,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
                    av_ts2str(cur_pkt.dts),
                    cur_pkt.size);
         }
-        if (s->debug & FF_FDEBUG_TS)
+        if (s->debug & FF_FDEBUG_TS){
             av_log(s, AV_LOG_DEBUG,
                    "ff_read_packet stream=%d, pts=%s, dts=%s, size=%d, duration=%"PRId64", flags=%d\n",
                    cur_pkt.stream_index,
                    av_ts2str(cur_pkt.pts),
                    av_ts2str(cur_pkt.dts),
                    cur_pkt.size, cur_pkt.duration, cur_pkt.flags);
+        }
 
         if (st->need_parsing && !st->parser && !(s->flags & AVFMT_FLAG_NOPARSE)) {
             st->parser = av_parser_init(st->codecpar->codec_id);
@@ -1692,8 +1699,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
-    if (!got_packet && s->internal->parse_queue)
+    if (!got_packet && s->internal->parse_queue){
         ret = read_from_packet_buffer(&s->internal->parse_queue, &s->internal->parse_queue_end, pkt);
+    }
 
     if (ret >= 0) {
         AVStream *st = s->streams[pkt->stream_index];
@@ -1777,7 +1785,13 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
     int ret;
     AVStream *st;
 
+    av_log(NULL, AV_LOG_DEBUG, "genpts=[%d]\n", genpts);
     if (!genpts) {
+        /*
+         attention menthuguan
+         read_from_packet_buffer (libavformat/utils.c)
+         read_frame_internal (libavformat/utils.c)
+         */
         ret = s->internal->packet_buffer
               ? read_from_packet_buffer(&s->internal->packet_buffer,
                                         &s->internal->packet_buffer_end, pkt)
@@ -1788,6 +1802,10 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
     }
 
     for (;;) {
+        /*
+         attention menthuguan
+         AVFormatInternal->packet_buffer是什么时候被赋值的？
+         */
         AVPacketList *pktl = s->internal->packet_buffer;
 
         if (pktl) {
@@ -3314,15 +3332,17 @@ int ff_rfps_add_frame(AVFormatContext *ic, AVStream *st, int64_t ts)
     int i, j;
     int64_t last = st->info->last_dts;
 
-    if (   ts != AV_NOPTS_VALUE && last != AV_NOPTS_VALUE && ts > last
+    if (ts != AV_NOPTS_VALUE && last != AV_NOPTS_VALUE && ts > last
        && ts - (uint64_t)last < INT64_MAX) {
         double dts = (is_relative(ts) ?  ts - RELATIVE_TS_BASE : ts) * av_q2d(st->time_base);
         int64_t duration = ts - last;
 
-        if (!st->info->duration_error)
+        if (!st->info->duration_error){
             st->info->duration_error = av_mallocz(sizeof(st->info->duration_error[0])*2);
-        if (!st->info->duration_error)
+        }
+        if (!st->info->duration_error){
             return AVERROR(ENOMEM);
+        }
 
 //         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
 //             av_log(NULL, AV_LOG_ERROR, "%f\n", dts);
@@ -3582,15 +3602,18 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         max_stream_analyze_duration =
         max_analyze_duration        = 5*AV_TIME_BASE;
         max_subtitle_analyze_duration = 30*AV_TIME_BASE;
-        if (!strcmp(ic->iformat->name, "flv"))
+        if (!strcmp(ic->iformat->name, "flv")){
             max_stream_analyze_duration = 90*AV_TIME_BASE;
-        if (!strcmp(ic->iformat->name, "mpeg") || !strcmp(ic->iformat->name, "mpegts"))
+        }
+        if (!strcmp(ic->iformat->name, "mpeg") || !strcmp(ic->iformat->name, "mpegts")){
             max_stream_analyze_duration = 7*AV_TIME_BASE;
+        }
     }
 
-    if (ic->pb)
-        av_log(ic, AV_LOG_DEBUG, "Before avformat_find_stream_info() pos: %"PRId64" bytes read:%"PRId64" seeks:%d nb_streams:%d\n",
+    if (ic->pb){
+        av_log(ic, AV_LOG_DEBUG, "menthuguan Before avformat_find_stream_info() pos: %"PRId64" bytes read:%"PRId64" seeks:%d nb_streams:%d\n",
                avio_tell(ic->pb), ic->pb->bytes_read, ic->pb->seek_count, ic->nb_streams);
+    }
 
     for (i = 0; i < ic->nb_streams; i++) {
         const AVCodec *codec;
@@ -4482,6 +4505,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (!st->internal)
         goto fail;
 
+    /*
+     attention menthuguan
+     avcodec_parameters_alloc(libavcodec/utils.c)
+     */
     st->codecpar = avcodec_parameters_alloc();
     if (!st->codecpar)
         goto fail;
@@ -4816,6 +4843,10 @@ void avpriv_set_pts_info(AVStream *s, int pts_wrap_bits,
                          unsigned int pts_num, unsigned int pts_den)
 {
     AVRational new_tb;
+    /*
+     attention menthuguan
+     av_reduce(libavutil/rational.c)
+     */
     if (av_reduce(&new_tb.num, &new_tb.den, pts_num, pts_den, INT_MAX)) {
         if (new_tb.num != pts_num)
             av_log(NULL, AV_LOG_DEBUG,

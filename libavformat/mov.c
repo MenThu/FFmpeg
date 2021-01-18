@@ -578,10 +578,12 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     avio_rb32(pb); // version + flags
     entries = avio_rb32(pb);
+    av_log(c->fc, AV_LOG_DEBUG, "menthuguan entries=[%d]\n", entries);
     if (!entries ||
         entries >  (atom.size - 1) / MIN_DATA_ENTRY_BOX_SIZE + 1 ||
-        entries >= UINT_MAX / sizeof(*sc->drefs))
+        entries >= UINT_MAX / sizeof(*sc->drefs)){
         return AVERROR_INVALIDDATA;
+    }
     sc->drefs_count = 0;
     av_free(sc->drefs);
     sc->drefs_count = 0;
@@ -718,8 +720,8 @@ static int mov_read_hdlr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     ctype = avio_rl32(pb);
     type = avio_rl32(pb); /* component subtype */
 
-    av_log(c->fc, AV_LOG_TRACE, "ctype=%s\n", av_fourcc2str(ctype));
-    av_log(c->fc, AV_LOG_TRACE, "stype=%s\n", av_fourcc2str(type));
+    av_log(c->fc, AV_LOG_TRACE, "menthuguan ctype=%s\n", av_fourcc2str(ctype));
+    av_log(c->fc, AV_LOG_TRACE, "menthuguan stype=%s\n", av_fourcc2str(type));
 
     if (c->trak_index < 0) {  // meta not inside a trak
         if (type == MKTAG('m','d','t','a')) {
@@ -1214,8 +1216,9 @@ static int mov_read_mdhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     unsigned lang;
     int64_t creation_time;
 
-    if (c->fc->nb_streams < 1)
+    if (c->fc->nb_streams < 1){
         return 0;
+    }
     st = c->fc->streams[c->fc->nb_streams-1];
     sc = st->priv_data;
 
@@ -1240,6 +1243,7 @@ static int mov_read_mdhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     mov_metadata_creation_time(&st->metadata, creation_time);
 
     sc->time_scale = avio_rb32(pb);
+    av_log(NULL, AV_LOG_TRACE, "menthuguan mov_read_mdhd time_scale=[%d]\n", sc->time_scale);
     if (sc->time_scale <= 0) {
         av_log(c->fc, AV_LOG_ERROR, "Invalid mdhd time scale %d, defaulting to 1\n", sc->time_scale);
         sc->time_scale = 1;
@@ -1270,6 +1274,7 @@ static int mov_read_mvhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
     mov_metadata_creation_time(&c->fc->metadata, creation_time);
     c->time_scale = avio_rb32(pb); /* time scale */
+    av_log(NULL, AV_LOG_TRACE, "menthuguan mov_read_mvhd time_scale=[%d]\n", c->time_scale);
     if (c->time_scale <= 0) {
         av_log(c->fc, AV_LOG_ERROR, "Invalid mvhd time scale %d, defaulting to 1\n", c->time_scale);
         c->time_scale = 1;
@@ -1762,6 +1767,10 @@ static int mov_read_strf(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+/*
+ attention menthuguan
+ 处理chunk offset
+ */
 static int mov_read_stco(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
@@ -1776,31 +1785,43 @@ static int mov_read_stco(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     avio_r8(pb); /* version */
     avio_rb24(pb); /* flags */
 
+    /*
+     attention menthuguan
+     */
     entries = avio_rb32(pb);
+    av_log(NULL, AV_LOG_DEBUG, "menthuguan entries1=[%d]\n", entries);
 
-    if (!entries)
+    if (!entries){
         return 0;
+    }
 
-    if (sc->chunk_offsets)
+    if (sc->chunk_offsets){
         av_log(c->fc, AV_LOG_WARNING, "Duplicated STCO atom\n");
+    }
+    
     av_free(sc->chunk_offsets);
     sc->chunk_count = 0;
     sc->chunk_offsets = av_malloc_array(entries, sizeof(*sc->chunk_offsets));
-    if (!sc->chunk_offsets)
+    if (!sc->chunk_offsets){
         return AVERROR(ENOMEM);
+    }
+    
     sc->chunk_count = entries;
 
-    if      (atom.type == MKTAG('s','t','c','o'))
-        for (i = 0; i < entries && !pb->eof_reached; i++)
+    if (atom.type == MKTAG('s','t','c','o')){
+        for (i = 0; i < entries && !pb->eof_reached; i++){
             sc->chunk_offsets[i] = avio_rb32(pb);
-    else if (atom.type == MKTAG('c','o','6','4'))
-        for (i = 0; i < entries && !pb->eof_reached; i++)
+        }
+    }else if (atom.type == MKTAG('c','o','6','4')){
+        for (i = 0; i < entries && !pb->eof_reached; i++){
             sc->chunk_offsets[i] = avio_rb64(pb);
-    else
+        }
+    }else{
         return AVERROR_INVALIDDATA;
+    }
 
     sc->chunk_count = i;
-
+    av_log(NULL, AV_LOG_DEBUG, "menthuguan entries2=[%d] chunk_count=[%u]\n", entries, sc->chunk_count);
     if (pb->eof_reached)
         return AVERROR_EOF;
 
@@ -1823,6 +1844,11 @@ enum AVCodecID ff_mov_get_lpcm_codec_id(int bps, int flags)
 
 static int mov_codec_id(AVStream *st, uint32_t format)
 {
+    /*
+     attention menthuguan
+     ff_codec_get_id(libavformat/utils.c)
+     ff_codec_movaudio_tags，ff_codec_movvideo_tags(libavformat/isom.c)
+     */
     int id = ff_codec_get_id(ff_codec_movaudio_tags, format);
 
     if (id <= 0 &&
@@ -1836,16 +1862,19 @@ static int mov_codec_id(AVStream *st, uint32_t format)
                /* skip old ASF MPEG-4 tag */
                format && format != MKTAG('m','p','4','s')) {
         id = ff_codec_get_id(ff_codec_movvideo_tags, format);
-        if (id <= 0)
+        if (id <= 0){
             id = ff_codec_get_id(ff_codec_bmp_tags, format);
-        if (id > 0)
+        }
+        if (id > 0){
             st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+        }
         else if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA ||
                     (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE &&
                     st->codecpar->codec_id == AV_CODEC_ID_NONE)) {
             id = ff_codec_get_id(ff_codec_movsubtitle_tags, format);
-            if (id > 0)
+            if (id > 0){
                 st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
+            }
         }
     }
 
@@ -1880,14 +1909,17 @@ static void mov_parse_stsd_video(MOVContext *c, AVIOContext *pb,
     avio_rb16(pb); /* frames per samples */
 
     len = avio_r8(pb); /* codec name, pascal string */
-    if (len > 31)
+    if (len > 31){
         len = 31;
+    }
     mov_read_mac_string(c, pb, len, codec_name, sizeof(codec_name));
-    if (len < 31)
+    if (len < 31){
         avio_skip(pb, 31 - len);
+    }
 
-    if (codec_name[0])
+    if (codec_name[0]){
         av_dict_set(&st->metadata, "encoder", codec_name, 0);
+    }
 
     /* codec_tag YV12 triggers an UV swap in rawdec.c */
     if (!strncmp(codec_name, "Planar Y'CbCr 8-bit 4:2:0", 25)) {
@@ -1897,8 +1929,9 @@ static void mov_parse_stsd_video(MOVContext *c, AVIOContext *pb,
     }
     /* Flash Media Server uses tag H.263 with Sorenson Spark */
     if (st->codecpar->codec_tag == MKTAG('H','2','6','3') &&
-        !strncmp(codec_name, "Sorenson H263", 13))
+        !strncmp(codec_name, "Sorenson H263", 13)){
         st->codecpar->codec_id = AV_CODEC_ID_FLV1;
+    }
 
     st->codecpar->bits_per_coded_sample = avio_rb16(pb); /* depth */
 
@@ -2256,6 +2289,10 @@ static int mov_skip_multiple_stsd(MOVContext *c, AVIOContext *pb,
     return 0;
 }
 
+/*
+ attention menthuguan
+ 根据stsd中的entry信息来决定解码器id
+ */
 int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
 {
     AVStream *st;
@@ -2267,6 +2304,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
     st = c->fc->streams[c->fc->nb_streams-1];
     sc = st->priv_data;
 
+    av_log(NULL, AV_LOG_TRACE, "menthuguan entries=[%d]\n", entries);
     for (pseudo_stream_id = 0;
          pseudo_stream_id < entries && !pb->eof_reached;
          pseudo_stream_id++) {
@@ -2287,10 +2325,12 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
                    "invalid size %"PRId64" in stsd\n", size);
             return AVERROR_INVALIDDATA;
         }
-
+                
         if (mov_skip_multiple_stsd(c, pb, st->codecpar->codec_tag, format,
-                                   size - (avio_tell(pb) - start_pos)))
+                                   size - (avio_tell(pb) - start_pos))){
+            av_log(NULL, AV_LOG_TRACE, "menthuguan stsd_entries skip size=%"PRId64" 4CC=%s codec_type=%d\n", size, av_fourcc2str(format), st->codecpar->codec_type);
             continue;
+        }
 
         sc->pseudo_stream_id = st->codecpar->codec_tag ? -1 : pseudo_stream_id;
         sc->dref_id= dref_id;
@@ -2299,8 +2339,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
         id = mov_codec_id(st, format);
 
         av_log(c->fc, AV_LOG_TRACE,
-               "size=%"PRId64" 4CC=%s codec_type=%d\n", size,
-               av_fourcc2str(format), st->codecpar->codec_type);
+               "menthuguan stsd_entries size=%"PRId64" 4CC=%s codec_type=%d dref_id=[%d]\n", size, av_fourcc2str(format), st->codecpar->codec_type, dref_id);
 
         if (st->codecpar->codec_type==AVMEDIA_TYPE_VIDEO) {
             st->codecpar->codec_id = id;
@@ -2365,8 +2404,9 @@ static int mov_read_stsd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     avio_rb24(pb); /* flags */
     entries = avio_rb32(pb);
 
+    av_log(NULL, AV_LOG_TRACE, "menthuguan stsd.entries=[%d]\n", entries);
     if (entries <= 0) {
-        av_log(c->fc, AV_LOG_ERROR, "invalid STSD entries %d\n", entries);
+        av_log(c->fc, AV_LOG_ERROR, "menthuguan invalid STSD entries %d\n", entries);
         return AVERROR_INVALIDDATA;
     }
 
@@ -2407,6 +2447,10 @@ fail:
     return ret;
 }
 
+/*
+ attention menthuguan
+ 每一个chunk包含的sample数目
+ */
 static int mov_read_stsc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
@@ -2423,22 +2467,26 @@ static int mov_read_stsc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     entries = avio_rb32(pb);
 
-    av_log(c->fc, AV_LOG_TRACE, "track[%u].stsc.entries = %u\n", c->fc->nb_streams - 1, entries);
+    av_log(c->fc, AV_LOG_TRACE, "menthuguan track[%u].stsc.entries = %u\n", c->fc->nb_streams - 1, entries);
 
-    if (!entries)
+    if (!entries){
         return 0;
-    if (sc->stsc_data)
+    }
+    if (sc->stsc_data){
         av_log(c->fc, AV_LOG_WARNING, "Duplicated STSC atom\n");
+    }
     av_free(sc->stsc_data);
     sc->stsc_count = 0;
     sc->stsc_data = av_malloc_array(entries, sizeof(*sc->stsc_data));
-    if (!sc->stsc_data)
+    if (!sc->stsc_data){
         return AVERROR(ENOMEM);
+    }
 
     for (i = 0; i < entries && !pb->eof_reached; i++) {
         sc->stsc_data[i].first = avio_rb32(pb);
         sc->stsc_data[i].count = avio_rb32(pb);
         sc->stsc_data[i].id = avio_rb32(pb);
+        av_log(c->fc, AV_LOG_TRACE, "menthuguan index=[%d] first=[%d] count=[%d] id=[%d] \n", i, sc->stsc_data[i].first, sc->stsc_data[i].count, sc->stsc_data[i].id);
     }
 
     sc->stsc_count = i;
@@ -2451,6 +2499,7 @@ static int mov_read_stsc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
 static inline int mov_stsc_index_valid(unsigned int index, unsigned int count)
 {
+    av_log(NULL, AV_LOG_TRACE, "menthuguan index[%u] count[%u]\n", index, count);
     return index < count - 1;
 }
 
@@ -2469,6 +2518,10 @@ static inline int mov_get_stsc_samples(MOVStreamContext *sc, unsigned int index)
 
 static int mov_read_stps(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
+    /*
+     attention menthuguan
+     14496-12和14496-14中并没有关于stps的定义
+     */
     AVStream *st;
     MOVStreamContext *sc;
     unsigned i, entries;
@@ -2501,6 +2554,10 @@ static int mov_read_stps(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+/*
+ attention menthuguan
+ 标明关键帧sample
+ */
 static int mov_read_stss(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
@@ -2517,7 +2574,7 @@ static int mov_read_stss(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     entries = avio_rb32(pb);
 
-    av_log(c->fc, AV_LOG_TRACE, "keyframe_count = %u\n", entries);
+    av_log(c->fc, AV_LOG_TRACE, "menthuguan keyframe_count = %u\n", entries);
 
     if (!entries)
     {
@@ -2526,15 +2583,18 @@ static int mov_read_stss(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
         return 0;
     }
-    if (sc->keyframes)
+    if (sc->keyframes){
         av_log(c->fc, AV_LOG_WARNING, "Duplicated STSS atom\n");
-    if (entries >= UINT_MAX / sizeof(int))
+    }
+    if (entries >= UINT_MAX / sizeof(int)){
         return AVERROR_INVALIDDATA;
+    }
     av_freep(&sc->keyframes);
     sc->keyframe_count = 0;
     sc->keyframes = av_malloc_array(entries, sizeof(*sc->keyframes));
-    if (!sc->keyframes)
+    if (!sc->keyframes){
         return AVERROR(ENOMEM);
+    }
 
     for (i = 0; i < entries && !pb->eof_reached; i++) {
         sc->keyframes[i] = avio_rb32(pb);
@@ -2548,6 +2608,10 @@ static int mov_read_stss(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+/*
+ attention menthuguan
+ 每一个sample的大小，如果stsz中的sample_size值不为0，则sample一样大，如果不为0，则sample不一样大小，具体的大小由sample_sizes给出
+ */
 static int mov_read_stsz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
@@ -2589,12 +2653,18 @@ static int mov_read_stsz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR_INVALIDDATA;
     }
 
-    if (!entries)
+    if (!entries){
         return 0;
-    if (entries >= (UINT_MAX - 4) / field_size)
+    }
+    
+    if (entries >= (UINT_MAX - 4) / field_size){
         return AVERROR_INVALIDDATA;
-    if (sc->sample_sizes)
+    }
+    
+    if (sc->sample_sizes){
         av_log(c->fc, AV_LOG_WARNING, "Duplicated STSZ atom\n");
+    }
+    
     av_free(sc->sample_sizes);
     sc->sample_count = 0;
     sc->sample_sizes = av_malloc_array(entries, sizeof(*sc->sample_sizes));
@@ -2633,6 +2703,10 @@ static int mov_read_stsz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+/*
+ attention menthuguan
+ sample的时长信息
+ */
 static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
@@ -2650,11 +2724,12 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     avio_rb24(pb); /* flags */
     entries = avio_rb32(pb);
 
-    av_log(c->fc, AV_LOG_TRACE, "track[%u].stts.entries = %u\n",
+    av_log(c->fc, AV_LOG_TRACE, "menthuguan track[%u].stts.entries = %u\n",
             c->fc->nb_streams-1, entries);
 
-    if (sc->stts_data)
+    if (sc->stts_data){
         av_log(c->fc, AV_LOG_WARNING, "Duplicated STTS atom\n");
+    }
     av_free(sc->stts_data);
     sc->stts_count = 0;
     sc->stts_data = av_malloc_array(entries, sizeof(*sc->stts_data));
@@ -2671,17 +2746,18 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         sc->stts_data[i].count= sample_count;
         sc->stts_data[i].duration= sample_duration;
 
-        av_log(c->fc, AV_LOG_TRACE, "sample_count=%d, sample_duration=%d\n",
+        av_log(c->fc, AV_LOG_TRACE, "menthuguan sample_count=%d, sample_duration=%d\n",
                 sample_count, sample_duration);
 
         if (   i+1 == entries
             && i
             && sample_count == 1
             && total_sample_count > 100
-            && sample_duration/10 > duration / total_sample_count)
+            && sample_duration/10 > duration / total_sample_count){
             sample_duration = duration / total_sample_count;
-        duration+=(int64_t)sample_duration*sample_count;
-        total_sample_count+=sample_count;
+            duration+=(int64_t)sample_duration*sample_count;
+            total_sample_count+=sample_count;
+        }
     }
 
     sc->stts_count = i;
@@ -2710,6 +2786,10 @@ static void mov_update_dts_shift(MOVStreamContext *sc, int duration)
     }
 }
 
+/*
+ attention menthuguan
+ 解码时间与显示时间的映射关系
+ */
 static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
@@ -2725,16 +2805,19 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     avio_rb24(pb); /* flags */
     entries = avio_rb32(pb);
 
-    av_log(c->fc, AV_LOG_TRACE, "track[%u].ctts.entries = %u\n", c->fc->nb_streams - 1, entries);
+    av_log(c->fc, AV_LOG_TRACE, "menthuguan ctts track[%u].ctts.entries = %u\n", c->fc->nb_streams - 1, entries);
 
-    if (!entries)
+    if (!entries){
         return 0;
-    if (entries >= UINT_MAX / sizeof(*sc->ctts_data))
+    }
+    if (entries >= UINT_MAX / sizeof(*sc->ctts_data)){
         return AVERROR_INVALIDDATA;
+    }
     av_freep(&sc->ctts_data);
     sc->ctts_data = av_fast_realloc(NULL, &sc->ctts_allocated_size, entries * sizeof(*sc->ctts_data));
-    if (!sc->ctts_data)
+    if (!sc->ctts_data){
         return AVERROR(ENOMEM);
+    }
 
     for (i = 0; i < entries && !pb->eof_reached; i++) {
         int count    =avio_rb32(pb);
@@ -2748,8 +2831,9 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         }
 
         /* Expand entries such that we have a 1-1 mapping with samples. */
-        for (j = 0; j < count; j++)
+        for (j = 0; j < count; j++){
             add_ctts_entry(&sc->ctts_data, &ctts_count, &sc->ctts_allocated_size, 1, duration);
+        }
 
         av_log(c->fc, AV_LOG_TRACE, "count=%d, duration=%d\n",
                 count, duration);
@@ -2765,6 +2849,7 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             mov_update_dts_shift(sc, duration);
     }
 
+    av_log(NULL, AV_LOG_TRACE, "menthuguan ctts_count=[%u]", ctts_count);
     sc->ctts_count = ctts_count;
 
     if (pb->eof_reached)
@@ -2827,6 +2912,8 @@ static int get_edit_list_entry(MOVContext *mov,
                                int64_t *edit_list_duration,
                                int64_t global_timescale)
 {
+    av_log(NULL, "menthuguan global_timescale=[%lld] edit_list_index=[%u] elst_cout=[%u]",
+           global_timescale, edit_list_index, msc->elst_count);
     if (edit_list_index == msc->elst_count) {
         return 0;
     }
@@ -2896,6 +2983,8 @@ static int64_t find_prev_closest_index(AVStream *st,
 static int64_t add_index_entry(AVStream *st, int64_t pos, int64_t timestamp,
                                int size, int distance, int flags)
 {
+    av_log(NULL, AV_LOG_TRACE, "menthuguan st->index=[%d] st->codecpar->codec_type=[%d] pos=[%lld] size=[%lld]\n",
+           st->index, st->codecpar->codec_type, pos, size);
     AVIndexEntry *entries, *ie;
     int64_t index = -1;
     const size_t min_size_needed = (st->nb_index_entries + 1) * sizeof(AVIndexEntry);
@@ -3031,6 +3120,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
 {
     MOVStreamContext *msc = st->priv_data;
     AVIndexEntry *e_old = st->index_entries;
+    //nb_index_entries 采样点个数
     int nb_old = st->nb_index_entries;
     const AVIndexEntry *e_old_end = e_old + nb_old;
     const AVIndexEntry *current = NULL;
@@ -3063,6 +3153,8 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
     MOVIndexRange *current_index_range;
     int i;
 
+    av_log(NULL, AV_LOG_TRACE, "menthuguan elst_data=[%s] elst_count=[%d] nb_old=[%d]\n",
+           msc->elst_data == NULL ? "NULL" : "HAS VALUE", msc->elst_count, nb_old);
     if (!msc->elst_data || msc->elst_count <= 0 || nb_old <= 0) {
         return;
     }
@@ -3090,6 +3182,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
 
     // If the dts_shift is positive (in case of negative ctts values in mov),
     // then negate the DTS by dts_shift
+    av_log(NULL, AV_LOG_TRACE, "menthuguan dts_shift=[%d]\n", msc->dts_shift);
     if (msc->dts_shift > 0) {
         edit_list_dts_entry_end -= msc->dts_shift;
         av_log(mov->fc, AV_LOG_DEBUG, "Shifting DTS by %d because of negative CTTS.\n", msc->dts_shift);
@@ -3099,7 +3192,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
 
     while (get_edit_list_entry(mov, msc, edit_list_index, &edit_list_media_time,
                                &edit_list_duration, mov->time_scale)) {
-        av_log(mov->fc, AV_LOG_DEBUG, "Processing st: %d, edit list %"PRId64" - media time: %"PRId64", duration: %"PRId64"\n",
+        av_log(mov->fc, AV_LOG_DEBUG, "menthuguan Processing st: %d, edit list %"PRId64" - media time: %"PRId64", duration: %"PRId64"\n",
                st->index, edit_list_index, edit_list_media_time, edit_list_duration);
         edit_list_index++;
         edit_list_dts_counter = edit_list_dts_entry_end;
@@ -3119,8 +3212,9 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
                 first_non_zero_audio_edit = 0;
             }
 
-            if (first_non_zero_audio_edit > 0)
+            if (first_non_zero_audio_edit > 0){
                 st->skip_samples = msc->start_pad = 0;
+            }
         }
 
         //find closest previous key frame
@@ -3140,8 +3234,9 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
             // edit_list_media_time to cover the decoder delay.
             search_timestamp = FFMAX(search_timestamp - msc->time_scale, e_old[0].timestamp);
         }
-
+        
         index = find_prev_closest_index(st, e_old, nb_old, search_timestamp, 0);
+        av_log(NULL, AV_LOG_TRACE, "menthuguan search_timestamp=[%lld] index=[%d]\n", search_timestamp, index);
         if (index == -1) {
             av_log(mov->fc, AV_LOG_WARNING,
                    "st: %d edit list: %"PRId64" Missing key frame while searching for timestamp: %"PRId64"\n",
@@ -3173,6 +3268,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
             }
         }
 
+        av_log(NULL, AV_LOG_TRACE, "menthuguan ctts_sample_old=[%d]", ctts_sample_old);
         edit_list_start_ctts_sample = ctts_sample_old;
 
         // Iterate over index and arrange it according to edit list
@@ -3190,7 +3286,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
 
             if (ctts_data_old && ctts_index_old < ctts_count_old) {
                 curr_ctts = ctts_data_old[ctts_index_old].duration;
-                av_log(mov->fc, AV_LOG_DEBUG, "stts: %"PRId64" ctts: %"PRId64", ctts_index: %"PRId64", ctts_count: %"PRId64"\n",
+                av_log(mov->fc, AV_LOG_DEBUG, "menthuguan stts: %"PRId64" ctts: %"PRId64", ctts_index: %"PRId64", ctts_count: %"PRId64"\n",
                        curr_cts, curr_ctts, ctts_index_old, ctts_count_old);
                 curr_cts += curr_ctts;
                 ctts_sample_old++;
@@ -3335,6 +3431,10 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
     msc->current_index = msc->index_ranges[0].start;
 }
 
+/*
+ attention menthuguan
+ 为每个sample生成一个AVIndexEntry
+ */
 static void mov_build_index(MOVContext *mov, AVStream *st)
 {
     MOVStreamContext *sc = st->priv_data;
@@ -3352,8 +3452,14 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         int64_t empty_duration = 0; // empty duration of the first edit list entry
         int64_t start_time = 0; // start time of the media
 
+        /*
+         attention menthuguan
+         AVMediaType(libavutil/util.h)
+         */
         for (i = 0; i < sc->elst_count; i++) {
             const MOVElst *e = &sc->elst_data[i];
+            av_log(NULL, AV_LOG_TRACE, "menthuguan index=[%d] duration=[%llu] time=[%llu] rate=[%.6f]\n",
+                   i, e->duration, e->time, e->rate, mov->advanced_editlist);
             if (i == 0 && e->time == -1) {
                 /* if empty, the first entry is the start time of the stream
                  * relative to the presentation itself */
@@ -3365,11 +3471,18 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 multiple_edits = 1;
             }
         }
+        
+        av_log(NULL, AV_LOG_TRACE, "menthuguan multiple_edits=[%d] advanced_editlist=[%d] empty_duration=[%d] start_time=[%llu]"
+               "mov->time_scale=[%d]\n", multiple_edits, mov->advanced_editlist, empty_duration, start_time, mov->time_scale);
+        av_log(NULL, AV_LOG_TRACE, "menthuguan codec_type=[%d] stts_count=[%d] duration=[%d]\n",
+               st->codecpar->codec_type, sc->stts_count, sc->stts_data[0].duration);
 
-        if (multiple_edits && !mov->advanced_editlist)
+        if (multiple_edits && !mov->advanced_editlist){
             av_log(mov->fc, AV_LOG_WARNING, "multiple edit list entries, "
                    "Use -advanced_editlist to correctly decode otherwise "
                    "a/v desync might occur\n");
+        }
+            
 
         /* adjust first dts according to edit list */
         if ((empty_duration || start_time) && mov->time_scale > 0) {
@@ -3396,16 +3509,31 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         unsigned int rap_group_sample = 0;
         int64_t last_dts = 0;
         int64_t dts_correction = 0;
+        av_log(NULL, AV_LOG_TRACE, "menthuguan rap_group_count=[%u] rap_group=[%d]\n", sc->rap_group_count, sc->rap_group == NULL ? 0 : 1);
+        av_log(NULL, AV_LOG_TRACE, "menthuguan current_dts=[%llu] dts_shift=[%d]\n", current_dts, sc->dts_shift);
         int rap_group_present = sc->rap_group_count && sc->rap_group;
         int key_off = (sc->keyframe_count && sc->keyframes[0] > 0) || (sc->stps_count && sc->stps_data[0] > 0);
-
+        av_log(NULL, AV_LOG_TRACE, "menthuguan key_off=[%ld] keyframe_count=[%d]\n", key_off, sc->keyframe_count);
+        /*
+         attention menthuguan
+         current_dts和last_dts的初始值应该为0
+         current_dts为0~当前sample的sample_deltas之和
+         */
         current_dts -= sc->dts_shift;
         last_dts     = current_dts;
 
-        if (!sc->sample_count || st->nb_index_entries)
+        av_log(NULL, AV_LOG_TRACE, "menthuguan sample_count=[%u] nb_index_entries=[%d] index_entries=[%u] rap_group_present=[%d]\n",
+               sc->sample_count, st->nb_index_entries, sizeof(*st->index_entries), rap_group_present);
+        if (!sc->sample_count || st->nb_index_entries){
             return;
-        if (sc->sample_count >= UINT_MAX / sizeof(*st->index_entries) - st->nb_index_entries)
+        }
+        if (sc->sample_count >= UINT_MAX / sizeof(*st->index_entries) - st->nb_index_entries){
             return;
+        }
+        /*
+         attention menthuguan
+         av_reallocp_array(libavutils/mem.c)
+         */
         if (av_reallocp_array(&st->index_entries,
                               st->nb_index_entries + sc->sample_count,
                               sizeof(*st->index_entries)) < 0) {
@@ -3417,10 +3545,17 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         for (i = 0; i < sc->chunk_count; i++) {
             int64_t next_offset = i+1 < sc->chunk_count ? sc->chunk_offsets[i+1] : INT64_MAX;
             current_offset = sc->chunk_offsets[i];
+            av_log(NULL, AV_LOG_TRACE, "menthuguan current_offset=[%lld] stsc_index[%u] i[%u] first[%u]\n", current_offset, stsc_index, i, sc->stsc_data[stsc_index + 1].first);
+            /*
+             attention menthuguan
+             找到所有共享samples_per_chunk和sample_description_index的chunk
+             */
             while (mov_stsc_index_valid(stsc_index, sc->stsc_count) &&
-                i + 1 == sc->stsc_data[stsc_index + 1].first)
+                   i + 1 == sc->stsc_data[stsc_index + 1].first){
                 stsc_index++;
+            }
 
+            av_log(NULL, AV_LOG_TRACE, "menthuguan stsc_index[%u] sample_size[%u] stsz_sample_size[%u]\n", stsc_index, sc->sample_size, sc->stsz_sample_size);
             if (next_offset > current_offset && sc->sample_size>0 && sc->sample_size < sc->stsz_sample_size &&
                 sc->stsc_data[stsc_index].count * (int64_t)sc->stsz_sample_size > next_offset - current_offset) {
                 av_log(mov->fc, AV_LOG_WARNING, "STSZ sample size %d invalid (too large), ignoring\n", sc->stsz_sample_size);
@@ -3431,6 +3566,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 sc->stsz_sample_size = sc->sample_size;
             }
 
+            av_log(NULL, AV_LOG_TRACE, "menthuguan keyframe_absent=[%d] key_off=[%d] stps_count=[%d] codec_type=[%d] pseudo_stream_id=[%d]\n",
+                   sc->keyframe_absent, key_off, sc->stps_count, st->codecpar->codec_type, sc->pseudo_stream_id);
             for (j = 0; j < sc->stsc_data[stsc_index].count; j++) {
                 int keyframe = 0;
                 if (current_sample >= sc->sample_count) {
@@ -3439,17 +3576,22 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 }
 
                 if (!sc->keyframe_absent && (!sc->keyframe_count || current_sample+key_off == sc->keyframes[stss_index])) {
+                    av_log(NULL, AV_LOG_TRACE, "menthuguan current_sample=[%d] stss_index=[%d][%d]\n",
+                           current_sample, stss_index, sc->keyframes == NULL ? -1 : sc->keyframes[stss_index]);
                     keyframe = 1;
-                    if (stss_index + 1 < sc->keyframe_count)
+                    if (stss_index + 1 < sc->keyframe_count){
                         stss_index++;
+                    }
                 } else if (sc->stps_count && current_sample+key_off == sc->stps_data[stps_index]) {
                     keyframe = 1;
-                    if (stps_index + 1 < sc->stps_count)
+                    if (stps_index + 1 < sc->stps_count){
                         stps_index++;
+                    }
                 }
                 if (rap_group_present && rap_group_index < sc->rap_group_count) {
-                    if (sc->rap_group[rap_group_index].index > 0)
+                    if (sc->rap_group[rap_group_index].index > 0){
                         keyframe = 1;
+                    }
                     if (++rap_group_sample == sc->rap_group[rap_group_index].count) {
                         rap_group_sample = 0;
                         rap_group_index++;
@@ -3458,10 +3600,13 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 if (sc->keyframe_absent
                     && !sc->stps_count
                     && !rap_group_present
-                    && (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO || (i==0 && j==0)))
-                     keyframe = 1;
-                if (keyframe)
+                    && (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO || (i==0 && j==0))){
+                    keyframe = 1;
+                }
+                av_log(NULL, AV_LOG_TRACE, "menthuguan keyframe=[%d]\n", keyframe);
+                if (keyframe){
                     distance = 0;
+                }
                 sample_size = sc->stsz_sample_size > 0 ? sc->stsz_sample_size : sc->sample_sizes[current_sample];
                 if (sc->pseudo_stream_id == -1 ||
                    sc->stsc_data[stsc_index].id - 1 == sc->pseudo_stream_id) {
@@ -3476,11 +3621,16 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                     e->size = sample_size;
                     e->min_distance = distance;
                     e->flags = keyframe ? AVINDEX_KEYFRAME : 0;
-                    av_log(mov->fc, AV_LOG_TRACE, "AVIndex stream %d, sample %u, offset %"PRIx64", dts %"PRId64", "
+                    av_log(mov->fc, AV_LOG_TRACE, "menthuguan AVIndex stream %d, sample %u, offset %"PRIx64", dts %"PRId64", "
                             "size %u, distance %u, keyframe %d\n", st->index, current_sample,
                             current_offset, current_dts, sample_size, distance, keyframe);
-                    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && st->nb_index_entries < 100)
+                    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && st->nb_index_entries < 100){
+                        /*
+                         attention menthuguan
+                         ff_rfps_add_frame(libavformat/utils.c)
+                         */
                         ff_rfps_add_frame(mov->fc, st, current_dts);
+                    }
                 }
 
                 current_offset += sample_size;
@@ -3515,9 +3665,15 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 }
             }
         }
-        if (st->duration > 0)
+        av_log(NULL, "menthuguan time_scale=[%lld] duration=[%lld]", sc->time_scale, st->duration);
+        if (st->duration > 0){
             st->codecpar->bit_rate = stream_size*8*sc->time_scale/st->duration;
+        }
     } else {
+        /*
+         attention menthuguan
+         什么样的trak会进入到这个else逻辑呢？
+         */
         unsigned chunk_samples, total = 0;
 
         // compute total chunk count
@@ -3741,7 +3897,7 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     /*
      attention menthuguan
-     avformat_new_stream(utils.c)
+     avformat_new_stream(libavformat/utils.c)
      */
     st = avformat_new_stream(c->fc, NULL);
     if (!st) return AVERROR(ENOMEM);
@@ -3754,8 +3910,17 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     sc->ffindex = st->index;
     c->trak_index = st->index;
 
-    if ((ret = mov_read_default(c, pb, atom)) < 0)
+    /*
+     attention menthuguan
+     这里会处理trak以及它嵌套的内部box
+     */
+    av_log(NULL, AV_LOG_TRACE, "menthuguan read_trak before st->codecpar=[%s]", st->codecpar == NULL ? "null": "has value");
+    if ((ret = mov_read_default(c, pb, atom)) < 0){
         return ret;
+    }
+    if (st->codecpar != NULL) {
+        av_log(NULL, AV_LOG_TRACE, "menthuguan read_trak after st->codecpar=[%s]", av_fourcc2str(st->codecpar->codec_tag));
+    }
 
     c->trak_index = -1;
 
@@ -4602,25 +4767,29 @@ static int mov_read_elst(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     MOVStreamContext *sc;
     int i, edit_count, version;
 
-    if (c->fc->nb_streams < 1 || c->ignore_editlist)
+    if (c->fc->nb_streams < 1 || c->ignore_editlist){
         return 0;
+    }
     sc = c->fc->streams[c->fc->nb_streams-1]->priv_data;
 
     version = avio_r8(pb); /* version */
     avio_rb24(pb); /* flags */
     edit_count = avio_rb32(pb); /* entries */
 
-    if (!edit_count)
+    if (!edit_count){
         return 0;
-    if (sc->elst_data)
+    }
+    if (sc->elst_data){
         av_log(c->fc, AV_LOG_WARNING, "Duplicated ELST atom\n");
+    }
     av_free(sc->elst_data);
     sc->elst_count = 0;
     sc->elst_data = av_malloc_array(edit_count, sizeof(*sc->elst_data));
-    if (!sc->elst_data)
+    if (!sc->elst_data){
         return AVERROR(ENOMEM);
+    }
 
-    av_log(c->fc, AV_LOG_TRACE, "track[%u].edit_count = %i\n", c->fc->nb_streams - 1, edit_count);
+    av_log(c->fc, AV_LOG_TRACE, "menthuguan track[%u].edit_count = %i\n", c->fc->nb_streams - 1, edit_count);
     for (i = 0; i < edit_count && !pb->eof_reached; i++) {
         MOVElst *e = &sc->elst_data[i];
 
@@ -4632,7 +4801,7 @@ static int mov_read_elst(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             e->time     = (int32_t)avio_rb32(pb); /* media time */
         }
         e->rate = avio_rb32(pb) / 65536.0;
-        av_log(c->fc, AV_LOG_TRACE, "duration=%"PRId64" time=%"PRId64" rate=%f\n",
+        av_log(c->fc, AV_LOG_TRACE, "menthugun duration=%"PRId64" time=%"PRId64" rate=%f\n",
                e->duration, e->time, e->rate);
 
         if (e->time < 0 && e->time != -1 &&
@@ -6238,16 +6407,19 @@ static int mov_read_header(AVFormatContext *s)
     }
     av_log(mov->fc, AV_LOG_TRACE, "on_parse_exit_offset=%"PRId64"\n", avio_tell(pb));
 
+    
+    av_log(mov->fc, AV_LOG_TRACE, "seekable=[%d] nb_chapter_tracks=[%u] ignore_chapters=[%d]\n", pb->seekable, mov->nb_chapter_tracks, mov->ignore_chapters);
     if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         if (mov->nb_chapter_tracks > 0 && !mov->ignore_chapters){
             mov_read_chapters(s);
         }
-        for (i = 0; i < s->nb_streams; i++)
+        for (i = 0; i < s->nb_streams; i++){
             if (s->streams[i]->codecpar->codec_tag == AV_RL32("tmcd")) {
                 mov_read_timecode_track(s, s->streams[i]);
             } else if (s->streams[i]->codecpar->codec_tag == AV_RL32("rtmd")) {
                 mov_read_rtmd_track(s, s->streams[i]);
             }
+        }
     }
 
     /* copy timecode metadata from tmcd tracks to the related video streams */
@@ -6275,12 +6447,15 @@ static int mov_read_header(AVFormatContext *s)
         AVStream *st = s->streams[i];
         MOVStreamContext *sc = st->priv_data;
         fix_timescale(mov, sc);
+        av_log(NULL, "menthuguan start_pad=[%d] nb_frames_for_fps=[%d]", sc->start_pad, sc->nb_frames_for_fps);
         if(st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && st->codecpar->codec_id == AV_CODEC_ID_AAC) {
             st->skip_samples = sc->start_pad;
         }
-        if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && sc->nb_frames_for_fps > 0 && sc->duration_for_fps > 0)
+        if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && sc->nb_frames_for_fps > 0 && sc->duration_for_fps > 0){
             av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
                       sc->time_scale*(int64_t)sc->nb_frames_for_fps, sc->duration_for_fps, INT_MAX);
+        }
+            
         if (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) {
             if (st->codecpar->width <= 0 || st->codecpar->height <= 0) {
                 st->codecpar->width  = sc->width;
@@ -6300,6 +6475,7 @@ static int mov_read_header(AVFormatContext *s)
         }
     }
 
+    av_log(NULL, "menthuguan trex_data=[%s] use_mfra_for=[%d]\n", mov->trex_data == NULL ? "NULL" : "HAS VALUE", mov->use_mfra_for);
     if (mov->trex_data) {
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
@@ -6344,6 +6520,12 @@ static int mov_read_header(AVFormatContext *s)
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         MOVStreamContext *sc = st->priv_data;
+        
+        /*
+         attention menthuguan
+         av_stream_add_side_data(libavformat/utils.c)
+         ff_replaygain_export(libavformat/replaygain.c)
+         */
 
         switch (st->codecpar->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
@@ -6405,9 +6587,11 @@ static int mov_read_header(AVFormatContext *s)
 
     for (i = 0; i < mov->fragment_index_count; i++) {
         MOVFragmentIndex *idx = mov->fragment_index_data[i];
-        for (j = 0; j < idx->item_count; j++)
-            if (idx->items[j].moof_offset <= mov->fragment.moof_offset)
+        for (j = 0; j < idx->item_count; j++){
+            if (idx->items[j].moof_offset <= mov->fragment.moof_offset){
                 idx->items[j].headers_read = 1;
+            }
+        }
     }
 
     return 0;
@@ -6425,11 +6609,16 @@ static AVIndexEntry *mov_find_next_sample(AVFormatContext *s, AVStream **st)
     int64_t pos = avio_tell(s->pb);
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *avst = s->streams[i];
+        /*
+         attention menthuguan
+         priv_data是在处理mov_read_trak的时候赋值的
+         avst->index_entries是在何时赋值的？
+         */
         MOVStreamContext *msc = avst->priv_data;
         if (msc->pb && msc->current_sample < avst->nb_index_entries) {
             AVIndexEntry *current_sample = &avst->index_entries[msc->current_sample];
             int64_t dts = av_rescale(current_sample->timestamp, AV_TIME_BASE, msc->time_scale);
-            av_log(s, AV_LOG_TRACE, "stream %d, sample %d, dts %"PRId64"\n", i, msc->current_sample, dts);
+            av_log(s, AV_LOG_TRACE, "menthuguan stream %d, sample %d, dts %"PRId64"\n", i, msc->current_sample, dts);
             if (!best_dts_sample || (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL) && current_sample->pos < best_dts_sample->pos) ||
                 ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) &&
                  ((msc->pb != s->pb && dts < best_dts) || (msc->pb == s->pb &&
@@ -6549,6 +6738,10 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     int ret;
     mov->fc = s;
  retry:
+    /*
+     attention menthuguan
+     sample记录下一帧的偏移量与大小
+     */
     sample = mov_find_next_sample(s, &st);
     if (!sample || (mov->next_root_atom && sample->pos > mov->next_root_atom)) {
         if (!mov->next_root_atom)
@@ -6583,6 +6776,10 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
             goto retry;
         }
 
+        /*
+         attention menthuguan
+         av_get_packet(libavformat/utils.c)
+         */
         ret = av_get_packet(sc->pb, pkt, sample->size);
         if (ret < 0) {
             if (should_retry(sc->pb, ret)) {

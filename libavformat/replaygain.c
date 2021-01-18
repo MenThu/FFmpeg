@@ -75,6 +75,10 @@ int ff_replaygain_export_raw(AVStream *st, int32_t tg, uint32_t tp,
     if (tg == INT32_MIN && ag == INT32_MIN)
         return 0;
 
+    /*
+     attention menthuguan
+     av_stream_new_side_data(libavformat/utils.c)
+     */
     replaygain = (AVReplayGain*)av_stream_new_side_data(st, AV_PKT_DATA_REPLAYGAIN,
                                                         sizeof(*replaygain));
     if (!replaygain)
